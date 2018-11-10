@@ -7,10 +7,7 @@ $(info CC = $(CC))
 
 # Compiler debug level
 CFLAGS += -O3
-#CFLAGS +=  -g -O2
-#CFLAGS +=  -g -rdynamic -O2
-#CFLAGS += -fno-omit-frame-pointer
-#CFLAGS +=  -ggdb
+#CFLAGS +=  -g 
 
 #Turn warnings into errors
 #CFLAGS += -Werror 
@@ -30,5 +27,7 @@ endif
 CFLAGS += -D NDEBUG
 CFLAGS += -D NINFO
 CFLAGS += -D NSIGG
+
+CFLAGS += -D CUCKOO
 
 #CFLAGS += -fno-stack-protector

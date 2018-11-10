@@ -378,7 +378,7 @@ static int create_pktio(const char *name, int if_idx, int num_rx,
     }
 
     odp_pktio_config_init(&config);
-    config.parser.layer = ODP_PKTIO_PARSER_LAYER_NONE;
+    //config.parser.layer = ODP_PKTIO_PARSER_LAYER_NONE;
     odp_pktio_config(pktio, &config);
 
     odp_pktin_queue_param_init(&pktin_param);
@@ -1125,6 +1125,7 @@ uint8_t maco_initialize(int argc, char **argv)
         odph_odpthreads_create(&thread_tbl[i], &thd_mask, &thr_params);
 
         // Enable this to use one cpu per thread per interface
+        //if (gconf->appl.cpu_count > 1)
         if (gconf->appl.cpu_count > 0)
             cpu = maco_get_next_cpu(&cpumask, cpu);
     }

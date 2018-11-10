@@ -14,18 +14,20 @@
 
 // ODP headers
 #include "odp_api.h"
+#include <odp/helper/odph_api.h>
 #include <odp/helper/eth.h>
 #include <odp/helper/chksum.h>
 #include <odp/helper/ip.h>
 #include <odp/helper/table.h>
 #include <net/ethernet.h>
-#include <include/odp/helper/threads.h>
+#include <odp/helper/linux.h>
+//#include <include/odp/helper/threads.h>
 
 // Backend-specific aliases
 #include "aliases.h"
 
 #define parse_as rte_pktmbuf_mtod
-#define MAX_ETHPORTS 32
+#define MAX_ETHPORTS 6
 
 // Shared types and constants
 extern uint32_t enabled_port_mask;
@@ -67,7 +69,7 @@ struct mbuf_table {
 #define MAX_TX_QUEUE_PER_PORT 1//RTE_MAX_ETHPORTS
 #define MAX_RX_QUEUE_PER_PORT 1//128
 
-#define NB_SOCKETS 8
+#define NB_SOCKETS 1
 
 //TODO update this counter variable
 #define NB_COUNTERS 0
@@ -77,14 +79,14 @@ struct mbuf_table {
 #endif
 
 #define MAC_MAX_LCORE 32
-#define NB_REPLICA 2
+#define NB_REPLICA 1
 #define SOCKET_DEF 0
 
 /** @def PKT_POOL_SIZE
  * @brief Size of the shared memory block
  */
-#define PKT_POOL_SIZE 8192
-//#define PKT_POOL_SIZE (512*2048)
+//#define PKT_POOL_SIZE 8192
+#define PKT_POOL_SIZE (512*2048)
 /** @def PKT_POOL_BUF_SIZE
  * @brief Buffer size of the packet pool buffer
  */
@@ -96,11 +98,11 @@ struct mbuf_table {
 /** @def MAX_WORKERS
  * @brief Maximum number of worker threads
  */
-#define MAX_WORKERS            32
+#define MAX_WORKERS            16
 /** Maximum number of pktio queues per interface */
-#define MAX_QUEUES             32
+#define MAX_QUEUES             16
 /** Maximum number of pktio interfaces */
-#define MAX_PKTIOS             8
+#define MAX_PKTIOS             2
 
 /**
  * Packet input mode

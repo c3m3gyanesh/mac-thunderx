@@ -11,6 +11,7 @@
 #include "fifo.h"
 #include <sys/select.h>
 #include "threadpool.h"
+#include <errno.h>
 
 typedef struct msg_buf_st
 {
@@ -20,13 +21,13 @@ typedef struct msg_buf_st
 
 typedef struct controller_st
 {
-    threadpool tpool;
-    fifo_t input_queue;
-    fifo_t output_queue;
-    int controller_fd;
-    digest_handler dh;
-    initialize init;
-    int port;
+	threadpool tpool;
+	fifo_t input_queue;
+	fifo_t output_queue;
+	int controller_fd;
+	digest_handler dh;
+	initialize init;
+	int port;
 } controller_t;
 
 typedef struct threadinfo_st {
@@ -37,39 +38,39 @@ typedef struct threadinfo_st {
 
 void input_processor(void *t)
 {
-    threadinfo_t* ti = (threadinfo_t*)t;
-    controller_t* ct = ti->ct;
-    msg_buf_t* mem_cell;
+	threadinfo_t* ti = (threadinfo_t*)t;
+	controller_t* ct = ti->ct;
+	msg_buf_t* mem_cell;
 
-    while ( 1 )
-    {
-        fifo_wait( &(ct->input_queue) );
-        mem_cell = fifo_remove_msg(&(ct->input_queue));
+	while ( 1 )
+	{
+		fifo_wait( &(ct->input_queue) );
+		mem_cell = fifo_remove_msg(&(ct->input_queue));
 
-        if (mem_cell==0) continue;
+		if (mem_cell==0) continue;
 
-        ct->dh( mem_cell->data );
+		ct->dh( mem_cell->data );
 
 
-        free( mem_cell );
-    }
+		free( mem_cell );
+	}
 }
 
 void output_processor(void *t)
 {
-    threadinfo_t* ti = (threadinfo_t*)t;
-    controller_t* ct = ti->ct;
-    msg_buf_t* mem_cell;
+	threadinfo_t* ti = (threadinfo_t*)t;
+	controller_t* ct = ti->ct;
+	msg_buf_t* mem_cell;
 
-    while ( 1 )
-    {
-        fifo_wait( &(ct->output_queue) );
-        mem_cell = fifo_remove_msg(&(ct->output_queue));
+	while ( 1 )
+	{
+		fifo_wait( &(ct->output_queue) );
+		mem_cell = fifo_remove_msg(&(ct->output_queue));
 
-        if (mem_cell==0) continue;
-        write_p4_msg(ti->sock_fd, mem_cell->data, mem_cell->length);
-        free ( mem_cell );
-    }
+		if (mem_cell==0) continue;
+		write_p4_msg(ti->sock_fd, mem_cell->data, mem_cell->length);
+		free ( mem_cell );
+	}
 }
 
 controller create_controller_with_init(uint16_t port, int number_of_threads, digest_handler dh, initialize init)
@@ -78,22 +79,31 @@ controller create_controller_with_init(uint16_t port, int number_of_threads, dig
 	struct sockaddr_in server;
 	/*struct sockaddr_in client;*/
 
-	if ((port<=0) || (number_of_threads<=0))
+	if ((port<=0) || (number_of_threads<=0)){
+	printf("Create controller init failed: wrong port/no of threads \n");
 		return 0;
+	}
 
 	ct = (controller_t*) malloc(sizeof(controller_t));
-	
-	if (ct==0)
+
+	if (ct==0){
+	printf("Create controller init failed: ct is zero \n");
 		return 0;
+	}
 
-    ct->tpool = create_threadpool(3);/*number_of_threads);*/
+	ct->tpool = create_threadpool(3);/*number_of_threads);*/
 
-    fifo_init(&(ct->input_queue));
-    fifo_init(&(ct->output_queue));
+	fifo_init(&(ct->input_queue));
+	fifo_init(&(ct->output_queue));
 	ct->dh = dh;
 	ct->init = init;
 
-	ct->controller_fd = socket( PF_INET, SOCK_STREAM, 0 );
+        // Creating socket file descriptor
+	if ((ct->controller_fd = socket(PF_INET, SOCK_STREAM, 0 )) == 0)
+	//if ((ct->controller_fd = socket(AF_INET, SOCK_STREAM, 0 )) == 0)
+        {
+                perror("socket failed");
+        }
 
 	/* Server's information*/
 	server.sin_family = AF_INET;	
@@ -101,11 +111,17 @@ controller create_controller_with_init(uint16_t port, int number_of_threads, dig
 	server.sin_port = htons(port);
 	ct->port = port;
 
-	/* binding the addressing information to the listen socket*/
-	bind( ct->controller_fd, (struct sockaddr *) &server, sizeof server );
+	/* binding the addressing information (like port number) to the listen socket*/
+	if (bind(ct->controller_fd, (struct sockaddr *) &server, sizeof(server)) < 0)
+        {
+                perror("bind failed");
+        }
 
-	listen( ct->controller_fd, 5 );
-	
+	if (listen(ct->controller_fd, 5) < 0)
+        {
+                perror("listen");
+        }
+
 	return (controller)ct;
 }
 
@@ -120,17 +136,17 @@ controller create_controller(uint16_t port, int number_of_threads, digest_handle
 
 	ct = (controller_t*) malloc(sizeof(controller_t));
 
-    if (ct==0)
-        return 0;
+	if (ct==0)
+		return 0;
 
-    ct->tpool = create_threadpool(3);/*number_of_threads);*/
+	ct->tpool = create_threadpool(3);/*number_of_threads);*/
 
-    fifo_init(&(ct->input_queue));
-    fifo_init(&(ct->output_queue));
-    ct->dh = dh;
-    ct->init = 0;
+	fifo_init(&(ct->input_queue));
+	fifo_init(&(ct->output_queue));
+	ct->dh = dh;
+	ct->init = 0;
 
-    ct->controller_fd = socket( PF_INET, SOCK_STREAM, 0 );
+	ct->controller_fd = socket( PF_INET, SOCK_STREAM, 0 );
 
 	/* Server's information*/
 	server.sin_family = AF_INET;	
@@ -142,7 +158,7 @@ controller create_controller(uint16_t port, int number_of_threads, digest_handle
 	bind( ct->controller_fd, (struct sockaddr *) &server, sizeof server );
 
 	listen( ct->controller_fd, 5 );
-	
+
 	return (controller)ct;
 }
 
@@ -150,71 +166,70 @@ void destroy_controller(controller c)
 {
 	controller_t* ct = (controller_t*)c;
 	destroy_threadpool(ct->tpool);
-    fifo_destroy( &(ct->input_queue) );
-    fifo_destroy( &(ct->output_queue) );
+	fifo_destroy( &(ct->input_queue) );
+	fifo_destroy( &(ct->output_queue) );
 	close(ct->controller_fd);
 	free(ct);
 }
 
 void execute_controller(controller c)
 {
-    controller_t* ct = (controller_t*)c;
-    struct sockaddr_in client;
-    socklen_t length;
-    threadinfo_t* ti;
-    int conn;
-    int i;
-    int rv;
-    fd_set master;
-    fd_set readfds;
-    int maxfds = ct->controller_fd;
-    msg_buf_t*  mem_cell;
+	controller_t* ct = (controller_t*)c;
+	struct sockaddr_in client;
+	socklen_t length;
+	threadinfo_t* ti;
+	int conn;
+	int i;
+	int rv;
+	fd_set master;
+	fd_set readfds;
+	int maxfds = ct->controller_fd;
+	msg_buf_t*  mem_cell;
+	FD_ZERO(&master);
+	FD_SET(ct->controller_fd, &master);
+	length = sizeof(client);
+	while (1) { /*TODO - replace this stupid implementation*/
 
-    FD_ZERO(&master);
-    FD_SET(ct->controller_fd, &master);
+		readfds = master;
 
-    while (1) { /*TODO - replace this stupid implementation*/
+		select(maxfds+1, &readfds, 0,0,0);
+		for (i=0;i<maxfds+1;++i)
+		{
+			if (FD_ISSET(i, &readfds)) {
+				if (i==ct->controller_fd) {
+					if ((conn = accept( ct->controller_fd, (struct sockaddr *) &client, &length )) < 0 ){
+						perror("accept");
+						break;
+					}
 
-        readfds = master;
+					ti = (threadinfo_t*) malloc(sizeof(threadinfo_t));
+					ti->ct = ct;
+					ti->sock_fd = conn;
 
-        select(maxfds+1, &readfds, 0,0,0);
-
-        for (i=0;i<maxfds+1;++i)
-        {
-            if (FD_ISSET(i, &readfds)) {
-                if (i==ct->controller_fd) {
-                    if ((conn = accept( ct->controller_fd, (struct sockaddr *) &client, &length )) < 0 )
-                        break;
-
-                    printf("New device connected...\n");
-                    ti = (threadinfo_t*) malloc(sizeof(threadinfo_t));
-                    ti->ct = ct;
-                    ti->sock_fd = conn;
-
-                    dispatch(ct->tpool, output_processor, (void*)ti);
-                    sleep(1);
-                    dispatch(ct->tpool, input_processor, (void*)ti);
-                    FD_SET(conn, &master);
-                    maxfds = conn>maxfds?conn:maxfds;
-                    printf("Initialize switch\n");
-                    if (ct->init!=0)
-                        ct->init();
-                } else {
-                    mem_cell = (msg_buf_t*)malloc(sizeof(msg_buf_t));
-                    mem_cell->length = 2048;
-                    if ((rv=read_p4_msg(i, mem_cell->data, mem_cell->length)) > 0)
-                    {
-                        fifo_add_msg( &(ct->input_queue), (void*)mem_cell );
-                    } else if (rv==0) {
-                        FD_CLR(i, &master);
-                        close(i);
-                        free(mem_cell);
-                        break;
-                    }	
-                }
-            }
-        }			
-    }
+					dispatch(ct->tpool, output_processor, (void*)ti);
+					sleep(1);
+					dispatch(ct->tpool, input_processor, (void*)ti);
+					FD_SET(conn, &master);
+					maxfds = conn>maxfds?conn:maxfds;
+					printf("Initialize switch\n");
+					if (ct->init!=0)
+						ct->init();
+				} else {
+					mem_cell = (msg_buf_t*)malloc(sizeof(msg_buf_t));
+					mem_cell->length = 2048;
+					if ((rv=read_p4_msg(i, mem_cell->data, mem_cell->length)) > 0)
+					{
+						fifo_add_msg( &(ct->input_queue), (void*)mem_cell );
+					} else if (rv==0) {
+						FD_CLR(i, &master);
+						close(i);
+						free(mem_cell);
+						break;
+					}	
+				}
+			}
+		}			
+	}
 }
 
 int send_p4_msg(controller c, char* buffer, int length)

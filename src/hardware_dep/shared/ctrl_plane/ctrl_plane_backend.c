@@ -134,7 +134,6 @@ backend create_backend(int num_of_threads, int queue_size, char* controller_name
 	mem_cell_t *tmp;
 	int i;
 	struct hostent *server;
-
 	if ((num_of_threads<=0) || (queue_size<=0))
 		return 0;
 
@@ -219,7 +218,7 @@ void launch_backend(backend bg)
 
         if( connect( bgt->controller_sock, (struct sockaddr *) &(bgt->controller_addr), sizeof(struct sockaddr_in) ) == -1 )
         {
-//                fprintf(stdout, "Connecting stream socket\n" );
+                fprintf(stdout, "Connecting stream socket\n" );
                 return;
         }
 

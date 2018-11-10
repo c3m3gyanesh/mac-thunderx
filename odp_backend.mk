@@ -1,4 +1,5 @@
 CDIR := $(dir $(lastword $(MAKEFILE_LIST)))
+#CDIR := ../
 
 VPATH += $(CDIR)/src/hardware_dep/odp
 VPATH += $(CDIR)/src/hardware_dep/odp/includes
@@ -8,8 +9,8 @@ VPATH += $(CDIR)/src/hardware_dep/odp/data_plane
 VPATH += $(ODP_SDK)/share
 VPATH += $(ODP_SDK)/include
 VPATH += $(ODP_SDK)/helper/include/odp/helper
-VPATH += $(ODP_SDK)/platform/linux-generic/include
-VPATH += $(ODP_SDK)/platform/linux-generic/arch/x86
+VPATH += $(ODP_SDK)/platform/linux-thunder/include
+VPATH += $(ODP_SDK)/platform/linux-thunder/arch/x86
 
 CFLAGS += -I "$(CDIR)src/hardware_dep/odp/includes"
 CFLAGS += -I "$(CDIR)src/hardware_dep/odp/ctrl_plane"
@@ -18,8 +19,8 @@ CFLAGS += -I "$(CDIR)src/hardware_dep/odp/data_plane"
 #ODP APIs
 CFLAGS += -I "$(ODP_SDK)/share"
 CFLAGS += -I "$(ODP_SDK)/include"
-CFLAGS += -I "$(ODP_SDK)/platform/linux-generic/include"
-CFLAGS += -I "$(ODP_SDK)/platform/linux-generic/arch/x86"
+CFLAGS += -I "$(ODP_SDK)/platform/linux-thunder/include"
+CFLAGS += -I "$(ODP_SDK)/platform/linux-thunder/arch/x86"
 
 #ODP Helper APIs
 CFLAGS += -I "$(ODP_SDK)/helper"
@@ -47,7 +48,7 @@ SRCS-Y += vector.c
 LDFLAGS += -L$(ODP_SDK)/lib/
 
 #01 ODP(socket-mmap, netmap)
-LIBS = -l:libodp-linux.a -l:libodphelper.a -lpthread -lrt -lcrypto -lpcap
+LIBS = -l:libodp-linux.a -l:libodphelper-linux.a -lpthread -lrt -lcrypto -lpcap
 
 #02 ODP(dpdk)
 #LDFLAGS += -L$(RTE_SDK)/x86_64-native-linuxapp-gcc/lib
